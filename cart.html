@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Satisfy&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <title>Your Cart</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .cart-item button {
+      padding: 5px 10px;
+      margin: 2px;
+      cursor: pointer;
+    }
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    #checkout-form {
+      display: none;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 5px;
+      max-width: 400px;
+    }
+    #checkout-form input, #checkout-form select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    #checkout-form button {
+      width: 100%;
+      padding: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Your Cart</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="cart.html" class="active">Cart 🛒</a>
+    </nav>
+  </header>
+
+  <main class="cart">
+    <div id="cart-items"></div>
+    <div class="cart-summary">
+      <p>Total: <strong id="total">Rs. 0</strong></p>
+      <button id="checkout-btn">Proceed to Checkout</button>
+    </div>
+
+    <!-- Checkout Form -->
+    <form id="checkout-form">
+      <h3>Checkout Details</h3>
+      <input type="text" id="customer_name" placeholder="Your Name" required>
+      <input type="email" id="customer_email" placeholder="Your Email" required>
+      <select id="payment_method" required>
+        <option value="">Select Payment Method</option>
+        <option value="Cash on Delivery">Cash on Delivery</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+      </select>
+      <button type="submit">Place Order</button>
+    </form>
+  </main>
+
+  <footer>
+    <p>© 2025 Mini Shop | Handmade with 💖</p>
+  </footer>
+
+  <script>
+  // --- LOAD CART AND RENDER ---
+  function loadCart() {
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      let container = document.getElementById("cart-items");
+      let total = 0;
+
+      container.innerHTML = "";
+
+      cart.forEach((item, index) => {
+          total += item.price * item.quantity;
+
+          const imgHTML = item.image ? `<img src="${item.image}" alt="${item.name}" width="80" style="margin-right:10px;">` : "";
+
+          container.innerHTML += `
+              <div class="cart-item" style="display:flex; align-items:center; margin-bottom:10px;">
+                  ${imgHTML}
+                  <div style="flex-grow:1;">
+                      <h3>${item.name}</h3>
+                      <p>Rs. ${item.price * item.quantity}</p>
+                      <div class="qty-controls">
+                          <button class="decrease-btn" data-index="${index}">-</button>
+                          <span>Qty: ${item.quantity}</span>
+                          <button class="increase-btn" data-index="${index}">+</button>
+                          <button class="remove-btn" data-index="${index}" style="margin-left:10px;">Remove</button>
+                      </div>
+                  </div>
+              </div>
+              <hr>
+          `;
+      });
+
+      document.getElementById("total").innerText = "Rs. " + total;
+
+      // --- BUTTON LISTENERS ---
+      document.querySelectorAll(".remove-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+              const idx = btn.dataset.index;
+              cart.splice(idx, 1);
+              localStorage.setItem("cart", JSON.stringify(cart));
+              loadCart();
+          });
+      });
+      document.querySelectorAll(".increase-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+              const idx = btn.dataset.index;
+              cart[idx].quantity += 1;
+              localStorage.setItem("cart", JSON.stringify(cart));
+              loadCart();
+          });
+      });
+      document.querySelectorAll(".decrease-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+              const idx = btn.dataset.index;
+              if (cart[idx].quantity > 1) {
+                  cart[idx].quantity -= 1;
+              } else {
+                  cart.splice(idx, 1);
+              }
+              localStorage.setItem("cart", JSON.stringify(cart));
+              loadCart();
+          });
+      });
+  }
+
+  loadCart();
+
+  // --- SHOW CHECKOUT FORM ---
+  document.getElementById("checkout-btn").addEventListener("click", () => {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      if (cart.length === 0) return alert("Your cart is empty!");
+      document.getElementById("checkout-form").style.display = "block";
+      window.scrollTo(0, document.body.scrollHeight); // scroll to form
+  });
+
+  // --- HANDLE FORM SUBMIT ---
+  document.getElementById("checkout-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      if (cart.length === 0) return alert("Your cart is empty!");
+
+      let customer_name = document.getElementById("customer_name").value.trim();
+      let customer_email = document.getElementById("customer_email").value.trim();
+      let payment_method = document.getElementById("payment_method").value;
+
+      if (!customer_name || !customer_email || !payment_method) return alert("Please fill all fields.");
+
+      let total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+      let orderData = {
+          customer_name,
+          customer_email,
+          payment_method,
+          items: cart, // array of products
+          total
+      };
+
+      try {
+          const response = await fetch("http://localhost/whimsyshop/api.php?action=order", {
+              method: "POST",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify(orderData)
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+              alert("Order placed successfully! Order ID: " + (result.order_id || ""));
+              localStorage.removeItem("cart");
+              window.location.href = "index.html";
+          } else {
+              alert("Order failed: " + (result.error || "Unknown error"));
+          }
+      } catch (err) {
+          alert("Network error: " + err.message);
+      }
+  });
+  </script>
+</body>
+</html>

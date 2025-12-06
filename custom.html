@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Custom Order | Whimsy Workshop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body { font-family: "Poppins", system-ui, sans-serif; background:#f6f6f9; color:#222; }
+    header { padding:18px; text-align:center; }
+    main.custom-box {
+      max-width:420px; margin:36px auto; background:#fff; padding:22px; border-radius:12px; box-shadow:0 6px 20px rgba(15,15,30,0.06);
+    }
+    form label { display:block; font-weight:600; margin:8px 0 6px; font-size:14px; }
+    form select, form input, form textarea {
+      width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e3e3e8; font-size:14px; box-sizing:border-box;
+    }
+    button { width:100%; padding:12px; margin-top:10px; border-radius:10px; border:0; background:#ff6fa5; color:#fff; font-weight:700; cursor:pointer; }
+    .message { margin-top:12px; text-align:center; padding:10px; border-radius:8px; display:none; }
+    .message.success { background:#eaf9ee; color:#0b7a3a; border:1px solid #c8efd0; }
+    .message.error { background:#fff1f0; color:#8a1f1f; border:1px solid #f5c6c6; }
+    .debug { font-size:12px; color:#666; margin-top:8px; white-space:pre-wrap; word-break:break-word; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Request a Custom Order</h1>
+      <!-- Side Menu -->
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="cart.html" class="active">Cart 🛒</a>
+    </nav>
+</header>
+
+<main class="custom-box">
+  <form id="customForm">
+    <label for="category">Choose Category</label>
+    <select id="category" name="category" required>
+      <option value="">Select…</option>
+      <option value="crochet">Crochet</option>
+      <option value="fuzzy">Fuzzy Wire</option>
+    </select>
+
+    <label for="item_type">Item Type</label>
+    <select id="item_type" name="item_type" required>
+      <option value="">Select…</option>
+      <option value="flower">Flower</option>
+      <option value="plushie">Plushie</option>
+      <option value="jewelry">Jewelry</option>
+      <option value="keychain">Keychain</option>
+    </select>
+
+    <label for="description">Description (optional)</label>
+    <textarea id="description" name="description" rows="4" placeholder="Describe size, colour, special requests..."></textarea>
+
+    <label for="email">Your Email</label>
+    <input id="email" name="email" type="email" required placeholder="you@example.com">
+
+    <button id="submitBtn" type="submit">Submit Custom Order</button>
+  </form>
+
+  <div id="success" class="message success">🎉 Your custom order has been noted!</div>
+  <div id="error" class="message error">⚠️ Failed to submit. See debug below.</div>
+
+  <div class="debug" id="debug" aria-live="polite"></div>
+</main>
+
+<script>
+const API_URL = "http://localhost/whimsyshop/api.php?action=custom_order"; // <- make sure this is your actual PHP file location
+
+function showDebug(text) {
+  document.getElementById('debug').innerText = text;
+}
+
+function showSuccess() {
+  document.getElementById('success').style.display = 'block';
+  document.getElementById('error').style.display = 'none';
+}
+
+function showError(message) {
+  document.getElementById('error').style.display = 'block';
+  document.getElementById('success').style.display = 'none';
+  showDebug(message);
+}
+
+document.getElementById("customForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  document.getElementById('success').style.display = 'none';
+  document.getElementById('error').style.display = 'none';
+  showDebug("Sending...");
+
+  const form = new FormData(this);
+  const payload = {
+    category: form.get('category'),
+    item_type: form.get('item_type'),
+    description: form.get('description') || "",
+    email: form.get('email')
+  };
+
+  // disable button while sending
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerText = "Sending...";
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    // Always try to read text and then JSON to capture server error messages
+    const text = await res.text();
+    let json = null;
+    try { json = JSON.parse(text); } catch(e) { /* ignore parse error */ }
+
+    console.log("HTTP", res.status, res.statusText, "response:", text);
+    showDebug("HTTP " + res.status + " — response:\n" + text);
+
+    if (!res.ok) {
+      showError("Server returned HTTP " + res.status);
+    } else if (json && json.success) {
+      showSuccess();
+      this.reset();
+    } else {
+      // API returned non-success JSON or unparseable text
+      showError("Server accepted request but returned an error or unexpected response.");
+    }
+  } catch (err) {
+    console.error("Fetch error:", err);
+    showError("Network or fetch error: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Submit Custom Order";
+  }
+});
+</script>
+
+</body>
+</html>

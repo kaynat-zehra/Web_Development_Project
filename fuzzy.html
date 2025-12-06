@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Satisfy&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <title>Fuzzy Wire Items | Whimsy Workshop</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <!-- Menu Button -->
+  <span class="menu-icon" onclick="openMenu()">☰</span>
+
+  <!-- Side Menu -->
+  <div id="sideMenu" class="side-menu">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeMenu()">&times;</a>
+    <a href="index.html">Home</a>
+    <a href="crochet.html">Crochet Items</a>
+    <a href="fuzzy.html" class="active">Fuzzy Wires</a>
+    <a href="custom.html">Custom Order</a>
+    <a href="cart.html">Cart 🛒</a>
+  </div>
+
+  <h1>Fuzzy Wire Items</h1>
+</header>
+
+<!-- Product Grid -->
+<main class="product-grid" id="product-grid"></main>
+
+<footer>
+  <p>© 2025 Mini Shop | Handmade with 💖</p>
+</footer>
+<div id="main-overlay" onclick="closeMenu()"></div>
+
+
+<script>
+/* ---------------- MENU ---------------- */
+function openMenu() {
+  document.getElementById("sideMenu").style.width = "250px";
+  document.getElementById("main-overlay").style.display = "block";
+}
+function closeMenu() {
+  document.getElementById("sideMenu").style.width = "0";
+  document.getElementById("main-overlay").style.display = "none";
+}
+
+/* ---------------- CART FUNCTION ---------------- */
+function addToCart(product) {
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+  let found = cart.find(item => item.id == product.id);
+
+  if (found) {
+    found.quantity += 1;
+  } else {
+    cart.push({ ...product, quantity: 1 });
+  }
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  alert(product.name + " added to cart!");
+}
+
+/* ---------------- FUZZY WIRE PRODUCT LIST ---------------- */
+const fuzzyProducts = [
+  { id: 201, name: "Sunflower Pot", price: 1000, image: "images/sunflower.jpg", description: "Cute fuzzy sunflower in a pot." },
+  { id: 202, name: "Flower Keychain", price: 150, image: "images/flower_keychain.jpg", description: "Colorful fuzzy flower keychain." },
+  { id: 203, name: "Rainbow Keychain", price: 150, image: "images/rainbow.jpg", description: "Soft fuzzy rainbow keychain." },
+  { id: 204, name: "Lily Bouquet (3 Flowers)", price: 1500, image: "images/fuzzy_flowers.jpg", description: "Handmade fuzzy lily bouquet." },
+  { id: 205, name: "Blue Tulip Bouquet", price: 2000, image: "images/fuzzy_b.jpg", description: "Beautiful blue fuzzy tulip bunch." }
+];
+
+/* --------------- LOAD FUZZY PRODUCTS --------------- */
+function loadFuzzyProducts() {
+  const grid = document.getElementById("product-grid");
+  grid.innerHTML = "";
+
+  fuzzyProducts.forEach(product => {
+    const card = document.createElement("div");
+    card.className = "product-card";
+
+    const imgHTML = product.image ? `<img src="${product.image}" alt="${product.name}">` : "";
+
+    card.innerHTML = `
+      ${imgHTML}
+      <h3>${product.name}</h3>
+      <p class="price">Rs. ${product.price}</p>
+      <p class="desc">${product.description}</p>
+      <button class="add-to-cart"
+          data-id="${product.id}"
+          data-name="${product.name}"
+          data-price="${product.price}"
+          data-image="${product.image}">
+          Add to Cart
+      </button>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Add listeners
+  document.querySelectorAll(".add-to-cart").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const product = {
+        id: btn.dataset.id,
+        name: btn.dataset.name,
+        price: Number(btn.dataset.price),
+        image: btn.dataset.image
+      };
+      addToCart(product);
+    });
+  });
+}
+
+// Load products
+loadFuzzyProducts();
+</script>
+
+</body>
+</html>
